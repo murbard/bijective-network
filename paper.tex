@@ -236,16 +236,19 @@ Our algorithm thus consists in:
 \item Take a gradient step to minimize \(\mathcal{L}\)
 \end{enumerate}
 
+TODO: the ugly bit is that \(Q\) changes over time, so the usual theorems for convergence
+of stochastic gradient descent don't necessarily apply, this should be cleared up.
+
 \subsection{Switching the KL divergence}
 
 In fact, since we are not attempting to find closed form formulas for
 integrating over \(Q(Z)\), we do not have to use the Variational inference
-trick of minimizing \(D_{Q(Z)||P(Z|\overline{X}))}\) and we can tackle
-\(D_{P(Z|\overline{X})||Q(Z)}\) which is a more natural metric. We note that
+trick of minimizing \(D_{KL}(Q(Z)||P(Z|\overline{X}))\) and we can tackle
+\(D_{KL}(P(Z|\overline{X})||Q(Z))\) which is a more natural metric. We note that
 
 \[
 \begin{aligned}
-  & D_{P(Z|\overline{X})|| Q(Z)} \\
+  & D_{KL}(P(Z|\overline{X})|| Q(Z)) \\
   &= \int_Z P(z|\overline{X}) \log \frac{P(z|\overline{X})}{Q(z)} \mathrm{d}z \\
   &= \int_Z Q(z) \frac{P(z|\overline{X})}{Q(z)} \log \frac{P(z|\overline{X})}{Q(z)}  \mathrm{d}z \\
   &= \int_Z Q(z) \frac{P(\overline{X}, z)}{P(\overline{X})Q(z)} \log \frac{P(\overline{X}, z)}{P(\overline{X})Q(z)}  \mathrm{d}z \\
@@ -259,10 +262,12 @@ We can minimize this metric by repeatedly sampling \(z_i\) from \(Q\),
 as before, and minimizing
 
 \[
-  \frac{P(\overline{X}, z)}{Q(z_i)} \log \frac{P(\overline{X}, z)}{Q(z_i)}
+  \frac{P(\overline{X}, z_i)}{Q(z_i)} \log \frac{P(\overline{X}, z_i)}{Q(z_i)}
 \]
 
 instead of \(\log(Q(z_i)/P(z_i, X))\)
+
+TODO: The gradient is 0 for Q(z_i) = e P(z_i) something's weird
 
 
 \section{Empirical results}
