@@ -236,8 +236,12 @@ Our algorithm thus consists in:
 \item Take a gradient step to minimize \(\mathcal{L}\)
 \end{enumerate}
 
-TODO: the ugly bit is that \(Q\) changes over time, so the usual theorems for convergence
-of stochastic gradient descent don't necessarily apply, this should be cleared up.
+At a first glance, it might seem that \(P\) doesn't appear in the derivative
+of \(\mathcal{L}\) with respect to the network weights, which means the
+algorithm would have no chance of working! However, the dependency on
+\(P\) appears once we take into account that \(Z_i\) depends the nework weights
+(it's essentially the reparametrization trick).
+
 
 \subsection{Switching the KL divergence}
 
