@@ -317,13 +317,16 @@ trick of minimizing \(D_{KL}(Q(Z)||P(Z|\overline{X}))\) and we can tackle
 
 \[
 \begin{aligned}
-  & D_{KL}(P(Z|\overline{X})|| Q(Z)) \\
+  & D_{KL}(P(Z|\overline{X})|| Q(Z) \\
   &= \int_Z P(z|\overline{X}) \log \frac{P(z|\overline{X})}{Q(z)} \mathrm{d}z \\
-  &= \int_Z Q(z) \frac{P(z|\overline{X})}{Q(z)} \log \frac{P(z|\overline{X})}{Q(z)}  \mathrm{d}z \\
-  &= \int_Z Q(z) \frac{P(\overline{X}, z)}{P(\overline{X})Q(z)} \log \frac{P(\overline{X}, z)}{P(\overline{X})Q(z)}  \mathrm{d}z \\
-  &= \int_Z Q(z) \frac{P(\overline{X}, z)}{P(\overline{X})Q(z)} \log \frac{P(\overline{X}, z)}{Q(z)}  \mathrm{d}z
-  - \int_Z P(z|\overline{X}) \log P(\overline{X})  \mathrm{d}z \\
-  &= \frac{1}{P(\overline{X})}\mathbb{E}_{Q} \left( \frac{P(\overline{X}, z)}{Q(z)} \log \frac{P(\overline{X}, z)}{Q(z)}\right) - K
+  &= \int_Z Q(z) \frac{P(z|\overline{X})}{Q(z)}
+  \log \frac{P(z|\overline{X})}{Q(z)}  \mathrm{d}z \\
+  &= \int_Z Q(z) \frac{P(\overline{X}, z)}{P(\overline{X})Q(z)}
+  \log \frac{P(\overline{X}, z)}{P(\overline{X})Q(z)}  \mathrm{d}z \\
+  &= \int\frac{P(\overline{X}, f^{-1}(u))}{
+    P(\overline{X})Q(f^{-1}(u))}
+  \log \frac{P(\overline{X}, f^{-1}(u))}{Q(f^{-1}(u))}  \mathrm{d}u
+  - \int P(z|\overline{X}) \log P(\overline{X})  \mathrm{d}z
 \end{aligned}
 \]
 
