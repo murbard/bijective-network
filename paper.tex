@@ -238,7 +238,8 @@ By performing the change of variable $U = f(Z)$
 
 \[
   \begin{aligned}
-    \mathcal{L} &= \mathbb{E}_{U} \left(Q(Z)|J_{f}(Z)|\log \frac{Q(f^{-1}(Y))}{P(f^{-1}(Z),X)}\right)\\
+    \mathcal{L} &= \mathbb{E}_{U} \left(\frac{Q(Z)}{|J_{f}(Z)|}
+      \log \frac{Q(f^{-1}(U))}{P(f^{-1}(Z),X)}\right)\\
                 &= \int \log \frac{Q(f^{-1}(U))}{P(f^{-1}(U),X)} \mathrm{d}U
   \end{aligned}
 \]
@@ -248,8 +249,8 @@ the stochastic gradient descent algorithm. Our algorithm, broadly therefore
 consists of:
 
 \begin{enumerate}
-\item Draw \(U_i\) uniformly at random in the \((-1,1)^n\)
-\item Let \(Z_i = f^{-1}(U_i)\) and \(\log Q(Z_i) = \log J(f, Z_i)\)
+\item Draw \(U_i\) uniformly, at randon, in \((-1,1)^n\)
+\item Let \(Z_i = f^{-1}(U_i)\) and \(Q(Z_i) = J_f(Z_i)\)
 \item Take a gradient step to minimize \(\log \frac{Q(Z_i)}{P(Z_i,X)}\)
 \end{enumerate}
 
@@ -267,8 +268,14 @@ The gradient is given as
   (f^{-1})'(U_i)\cdot\left(\frac{Q'(Z_i)}{Q(Z_i)} - \frac{P'(Z_i, X)}{P(Z_i, X)}\right)
 \]
 
-It's important to note that, this algorithm approximates \(\mathcal{L}\) by
-sampling through a \emph{fixed} distribution.
+A few important notes:
+
+\begin{itemize}
+\item We approximate \(\mathcal{L}\) by sampling through a \emph{fixed} distribution.
+\item There is no overfitting! The lower \(\mathcal{L}\) the better the approximation
+  of the true posterior. Therefore, it's OK to build very large network and to run
+  stochastic gradient descent all the way.
+\end{itemize}
 
 \subsection{What if \(P\) isn't differentiable?}
 
@@ -285,9 +292,9 @@ using Monte-Carlo integration. Therefore, we draw \(Z_{i+1}\) from
   \frac{Q_{\theta_{i+1}}(Z_{i+1})}{P(Z_{i+1},X)}
 \]
 
-Note that both \(Z_{i+1}\) and \(Q_{\theta_i}(Z_{i+1})\) are treated as
-\emph{constants} in the above expression. The derivative with respect
-to a parameter \(\theta\) yields
+Note that both \(Z_{i+1}\) and \(Q_{\theta_i}(Z_{i+1})\) are \emph{constant}
+with respect to \(\theta_{i+1}\) the parameter being optimized. The derivative
+with respect to \(\theta_{i+1}\) yields:
 
 \[
   \frac{1}{Q_{\theta_i}(Z_{i+1})}
@@ -296,7 +303,7 @@ to a parameter \(\theta\) yields
 \]
 
 The sign changes depending on whether \(Q_{t+1}(Z_{t+1})\) is greater or
-smaller than \(P(Z_{t+1},X) e^{1}\). The \(e^{1}\) factor is a bit hard
+smaller than \(P(Z_{t+1},X) \exp(1)\). That \(e\) factor is hard
 to explain and may suggest a problem with this approach.
 
 The shaky part is that the proposal distribution keeps changing over time.
@@ -316,7 +323,7 @@ trick of minimizing \(D_{KL}(Q(Z)||P(Z|\overline{X}))\) and we can tackle
   &= \int_Z Q(z) \frac{P(\overline{X}, z)}{P(\overline{X})Q(z)} \log \frac{P(\overline{X}, z)}{P(\overline{X})Q(z)}  \mathrm{d}z \\
   &= \int_Z Q(z) \frac{P(\overline{X}, z)}{P(\overline{X})Q(z)} \log \frac{P(\overline{X}, z)}{Q(z)}  \mathrm{d}z
   - \int_Z P(z|\overline{X}) \log P(\overline{X})  \mathrm{d}z \\
-  &= \frac{1}{P(\overline{X})}\mathbb{E}_{Q} \left( \frac{P(\overline{X}, z)}{Q(z)} \log \frac{P(\overline{X}, z)}{Q(z)}\right) + K
+  &= \frac{1}{P(\overline{X})}\mathbb{E}_{Q} \left( \frac{P(\overline{X}, z)}{Q(z)} \log \frac{P(\overline{X}, z)}{Q(z)}\right) - K
 \end{aligned}
 \]
 
