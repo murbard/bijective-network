@@ -30,23 +30,29 @@ We define a bijective network as a triplet
 \((\mathcal{I}, \mathcal{O}, f  : \mathcal{I} \mapsto \mathcal{O})\)
 where \(f\) is a diffeomorphism. We use the term ``bijective networks''
 because ``diffeomorphic networks'' doesn't quite have the same ring to it,
-and the differentiability is generally implied in neural networks. The
+and the differentiability is generally implied in neural networks\footnote{The
 requirement can also be weakened to accomodate activation functions like
-Relu which are differentiable almost everywhere. Throughout this paper,
-differentiability is assumed and we use ``bijective'' and ``diffeomorphic''
-interchangeably; we also refer to the determinant of the Jacobian matrix
-of that diffeomorphism simply as ``the Jacobian'' and the logarithm of
-that determinant as ``the log-Jacobian''.
+\textrm{Relu} which are differentiable almost everywhere.}.
+Throughout this paper, differentiability is assumed and we use ``bijective''
+and ``diffeomorphic'' interchangeably; we also refer to the determinant of the
+Jacobian matrix of that diffeomorphism simply as ``the Jacobian'' and the
+logarithm of that determinant as ``the log-Jacobian''.
 
 \subsection{Motivation}
 
+A rich, parametric, model of arbitrary probability distributions is a useful
+building block for many  statistical learning algorithms such as variational
+inference or density estimation.
+
 \(f\) can be interpreted as a pull-back  measure, with
-\(\left|J_f\right| = \frac{d \mathcal{O}}{d \mathcal{I}}\). A rich, parametric,
-model of arbitrary probability distributions is a useful building block for many
-statistical learning algorithms such as variational inference or density
-estimation.
+\(\left|J_f\right| = \frac{d \mathcal{O}}{d \mathcal{I}}\), and
+\(\left|J_f\right|^{-1}\) can be interpreted as a probability distribution
+over \(\mathcal{I}\). If \(\mathcal{O}\) is a hypercube, \(f^{-1}\) is,
+essentially, a copula.
 
 \subsection{Construction}
+
+\subsubsection{Layers \& activation functions}
 
 Concretely, we implement bijective networks as a composition of fully
 connected layers of \(n\) neurons each. Note that \(n\) is the dimension of
@@ -56,21 +62,27 @@ it's possible to increase \(n\) by introducing dummy, independent, variables,
 and marginalizing over them later.
 
 Hidden layers take their values in \(\mathbb{R}^n\) and the output layer in
-\((-1,1)^n\). The input layer can take its value in a variety of domains,
-typically cartesian products of \(\mathbb{R}\) and \((-1,1)\), with the idea
-that \((-1, 1)\) can be mapped to \(\mathbb{R}\) by \(\mathrm{arctanh}\).
+\((-1,1)^n\).
+
+The input layer can take its value in a variety of domains,
+provided they are diffeomorphic to \(\mathbb{R}^n\). These could be cartesian
+products of \(\mathbb{R}\) and intervals, where intervals are mapped to
+\(\mathbb{R}\) via an affine transform and \(\mathrm{arctanh}\) or the probit
+function, but they could easily be spheres, simplices, etc.
+
 In what follows we assume the input layer takes its values in \(\mathbb{R}^n\),
 without a loss of generality. For the sake of concretness, we will specify the
 non-linear activation functions used in the construction, but other appropriate
-functions may of course be substituted.
+functions (e.g. leaky Relu) may of course be substituted.
 
-We suggest using \(\mathrm{arsinh}\) as a close cousin to the sigmoid. Since
-its asymptotic behavior is logarithmic it can easily lead to vanishing
-gradients, therefore, we alternate with using \(\mathrm{sinh}\) on every other
-layer. The final output layer squashes the values to \((-1,1)^n\) by applying
-\(\mathrm{tanh}\). All weight matrices are, and remain, invertible. As a
-finite composition of diffeomorphisms the network is, itself, a
-diffeomorphism.
+We use \(\mathrm{arsinh}\), as an unbounded close cousin of the traditional
+sigmoid. Since its asymptotic behavior is logarithmic it can easily lead to
+problematic vanishing gradients, therefore, we alternate with using
+\(\mathrm{sinh}\) on every other layer, though careful initialization might
+solve that problem by itself. The final output layer squashes the values to
+\((-1,1)^n\) by applying \(\mathrm{tanh}\). All weight matrices are,
+and remain, invertible. As a finite composition of diffeomorphisms the network
+is, itself, a diffeomorphism.
 
 \subsubsection{Notation}
 
@@ -85,10 +97,10 @@ All of these vectors have dimension \(n\). For ease of notation, we also let
 \[
   \left\{
     \begin{aligned}
-      h_{i} &= W_{i} \cdot  h'_{i-1} + b_{i} \\
+      h_{i} &= W_{i} \cdot  h'_{i-1} + b_{i}, \forall i \in 0 \ldots 2m-1 \\
       h'_{2k} &= \mathrm{arsinh}(h_{2k}), \forall k \in 0 \ldots m-1 \\
       h'_{2k+1} &= \mathrm{sinh}(h_{2k+1}), \forall k \in 0 \ldots m-1\\
-      y &= W_{m} \cdot h'_m + b_m  \\
+      y &= W_{2m} \cdot h'_{2m} + b_{2m}  \\
       y' &= \mathrm{tanh}(y) \\
     \end{aligned}
   \right.
@@ -99,42 +111,45 @@ All of these vectors have dimension \(n\). For ease of notation, we also let
 \subsubsection{Computing the Jacobian}
 The Jacobian  of the network is the product of the Jacobians of each
 layer. The Jacobian of the transformation \( u \mapsto W u + b \) is simply
-\( W \), the Jacobian of the coordinate-wise non-linear transforms is simply
+\(W\), the Jacobian of the coordinate-wise non-linear transforms is simply
 the diagonal matrix with the derivative of the activation function at the
-matching coordinate.
+matching coordinates.
 
 More specifically we are interested in the log of the determinant of the
 Jacobian matrix (the log Jacobian). The log Jacobian of the network we defined
 is exacly
 
 \[
-  J(x) = \sum_{i=1}^{m} \log |W_{i}| +
-  \sum_{j=1}^n \left(\log(1-{y'_j}^2)\right)
-  + \frac{1}{2} \sum_{k=0}^{m-1} \sum_{j=1}^n
-  \left( \log (1 + (h'_{2k})_j^2) - \log (1 + (h_{2k+1})_j^2) \right)
+  J(x) = \sum_{i=0}^{2m} \log |W_{i}| +
+  \sum_{j=1}^n \log(1-{y'_j}^2)
+  +  \sum_{k=0}^{m-1} \sum_{j=1}^n
+  \frac{1}{2} \log \left(\frac{1 + (h'_{2k+1})_j^2}{1 + (h_{2k})_j^2}\right)
 \]
 
-\subsubsection{The chain rule}
-We are interested in taking gradient steps on the log Jacobian with respect to
+\subsubsection{Breaking up matrices}
+We are interested in computing the gradient of the log Jacobian with respect to
 our parameters, that is the weight matrices and bias vectors. The chain rule
-can be used, as in regular neural networks, with the only oddity being that we
+can be used, as in regular neural networks, with the only peculiarity that we
 need to take derivatives of the log determinant of matrices with respect to
 themselves.
 
-A well known identity is \(\frac{d \log |W|}{d W} = (W^{-1})^\top\). It looks as
+This derivative exists in closed form through identity
+\(\frac{d \log |W|}{d W} = (W^{-1})^\top\). It looks as
 though we might need to compute the inverse of the weight matrix, a costly
-(\(\mathcal{O}(n^{2.4\ldots})\), for the optimist) operation each time we
-compute a gradient step. Fortunately, we can, without loss of generality,
-represent \(W\) as the product of \(n(n-1)\) matrices that operate only on two
-coordinates each. To see why that is the case, consider that the gaussian
-elimination algorithm.
+operation\footnote{\(\mathcal{O}(n^{2.4\ldots})\), for the optimist but
+  \(\mathcal{O}(n^3)\) for the realist.}
+each time we compute a gradient. Fortunately, we can, without a loss of
+generality, represent \(W\) as the product of \(n(n-1)\) matrices that each
+operate on just two coordinates. To see why that is the case, consider that
+the gaussian elimination algorithm expresses the inverse of a matrix as the
+product of such elementary matrices.
 
 Concretely, instead of working with a full representation of the matrix \(W\) we
-maintain a list of \(n(n-1)\) \(2 \times 2\) matrices. The time complexity of
-the matrix vector product remains \(\mathcal{O}(n^2)\), as if multiplying
-directly by \(W\), but all other operations (inverse, gradient updates,
-computation of the log Jacobian) can now also be computed in
-\(\mathcal{O}(n^2)\).
+maintain a list of \(n(n-1)\) \((2 \times 2)\) matrices. The time complexity of
+the matrix vector product remains \(\mathcal{O}(n^2)\), as if we were
+multiplying directly by \(W\), but all other operations
+(inverse, gradient updates, computation of the log Jacobian) can now
+also be computed in \(\mathcal{O}(n^2)\).
 
 One downside is losing optimized BLAS methods for matrix-vector products.
 Additionaly, large batch sizes cannot benefit from Strassen multiplication
@@ -166,7 +181,7 @@ regions, since the image of the input domain is a hypercube of fixed volume.
 This is equivalent to saying the sum of the log jacobian, taken over the
 antecedant of the sample, should be maximized.
 
-The inverse of the Jacobian (divided by \(2^n\)) is a probability distribution
+The Jacobian (divided by \(2^n\)) is a probability distribution
 over the input space which smoothly approximates the empirical distribution.
 We are essentially training the network to approximate a copula which evenly
 spreads out the sample over a hypercube.
@@ -182,42 +197,44 @@ sample from \(P(Z | \overline{X})\), but they tend to be slow,
 hard to diagnose, an can suffer from poor convergence.
 
 A popular approximate technique is variational inference. In this model, a
-parametric distribution \(Q(Z)\) is optimized to minimize a lower bound
-on the KL divergence between \(Q\) and \(P(Z | X)\)
+parametric distribution \(Q_{\theta}\) is optimized to minimize a lower bound
+on the KL divergence between \(Q_{\theta}\) and \(P(Z | X)\)
 
 \[
-  \int Q(Z) \log \frac{Q(Z)}{P(Z, X)} \mathrm{d}Z
+  \int Q_{\theta}(Z) \log \frac{Q_{\theta}(Z)}{P(Z, X)} \mathrm{d}Z
 \]
 
-In practice, \(Q\) has a simple parametric form and factors into a product
-of independent distributions over several dimensions which leads to closed
-form integration formulas and a fast optimization algorithm.
+Typically, \(Q_{theta}\) is taken to have a simple parametric form that factors
+into a product of independent distributions over several dimensions which
+renders the integration tractable and lends itself to  fast optimization
+algorithm.
 
-However, oftentimes, \(Q\) is a rather poor approximation of
-\(P(Z | X)\) as the parametric family \(Q\) belongs to doesn't contain
-any distribution close to the shape of the true posterior.
+However,\(Q_{theta}\) is oftentimes a rather poor approximation of
+\(P(Z | X)\) because the parametric family is too poor to represent
+distributions close to the shape of the true posterior.
 
 \subsection{Variational inference, with bijective networks}
 
-The inverse of the Jacobian of a bijective network (divided by \(2^n\)
+The Jacobian of a bijective network (divided by \(2^n\)
 is a probability distribution. Its parametric representation is rich
 enough to fit complex posteriors. What's more, it is easy to sample from it,
 by drawing an output value uniformly at random, and computing its antecedant.
 To our knowledge, no other model offers:
 
 \begin{itemize}
-\item A rich parametrization capable of representing any probability distribution
+\item A rich parametrization capable of representing any probability
+  distribution
 \item Efficient sampling
 \item Knowlege of the partition function (the constant \(2^n\) in our case)
 \end{itemize}
 
-The quantity we are seeking to minimize is
+The quantity we are wish to minimize is
 
 \[
   \mathcal{L} = \mathbb{E}_{Q(Z)} \left(\log \frac{Q(Z)}{P(Z,X)} \right)
 \]
 
-By performing the change of variable $Z = f(U)$
+By performing the change of variable $U = f(Z)$
 
 \[
   \begin{aligned}
@@ -232,43 +249,57 @@ consists of:
 
 \begin{enumerate}
 \item Draw \(U_i\) uniformly at random in the \((-1,1)^n\)
-\item Let \(Z_i = f^{-1}(U_i)\) and \(\log Q(Z_i) = -\log J(f, U_i)\)
+\item Let \(Z_i = f^{-1}(U_i)\) and \(\log Q(Z_i) = \log J(f, Z_i)\)
 \item Take a gradient step to minimize \(\log \frac{Q(Z_i)}{P(Z_i,X)}\)
 \end{enumerate}
 
 At a first glance, it might seem that \(P\) doesn't appear in the derivative
 of the cost function with respect to the network weights, which means the
-algorithm would have no chance of working! However, the dependency on
-\(P\) appears once we take into account that \(Z_i\) depends the nework weights
-(it's essentially the reparametrization trick). Crucially, this means that
-\(P(Z,X)\) must be differentiable with respect to \(Z\).
+algorithm would have no chance of working! In fact, the dependency on
+\(P\) appears when we take into account the fact that \(Z_i\) depends the
+network weights (it's essentially the reparametrization trick).
+Crucially, this means that \(P(Z,X)\) must be differentiable with respect to
+\(Z\).
+
+The gradient is given as
+
+\[
+  (f^{-1})'(U_i)\cdot\left(\frac{Q'(Z_i)}{Q(Z_i)} - \frac{P'(Z_i, X)}{P(Z_i, X)}\right)
+\]
+
+It's important to note that, this algorithm approximates \(\mathcal{L}\) by
+sampling through a \emph{fixed} distribution.
 
 \subsection{What if \(P\) isn't differentiable?}
 
 If \(P\) isn't differentiable, we can use a variant of the previous algorithm,
 though convergence is harder to prove.
 
-Let \(Q_t\) be the distribution \(Q\) at timestep \(t\). We can sample use
-\(Q_t\) for importance sampling, and optimize the parameters for \(Q_{t+1}\).
-We draw \(Z_{t+1}\) from \(Q_t\) and then take a gradient step to minimize
+Let \(Q_{\theta_i}\) be the distribution \(Q_{\theta}\) at timestep \(i\).
+We use \(Q_{\theta_i}\) as a proposal distribution to estimate \(\mathcal{L}\)
+using Monte-Carlo integration. Therefore, we draw \(Z_{i+1}\) from
+\(Q_{\theta_i}\) and then take a gradient step to minimize
 
 \[
-  \frac{Q_{t+1}(Z_{t+1})}{Q_t(Z_{t+1})} \log \frac{Q(Z_{t+1})}{P(Z_{t+1},X)}
+  \frac{Q_{\theta_{i+1}}(Z_{i+1})}{Q_{\theta_i}(Z_{i+1})} \log
+  \frac{Q_{\theta_{i+1}}(Z_{i+1})}{P(Z_{i+1},X)}
 \]
 
-Note that both \(Z_{t+1}\) and \(Q_{t}(Z_{t+1})\) are treated as
+Note that both \(Z_{i+1}\) and \(Q_{\theta_i}(Z_{i+1})\) are treated as
 \emph{constants} in the above expression. The derivative with respect
 to a parameter \(\theta\) yields
 
 \[
-  \frac{\frac{\partial Q_{t+1}}{\partial \theta}}{Q_t(Z_{t+1})}\log \frac{Q_{t}(Z_{t+1})}{P(Z_{t+1},X)} + \frac{1}{Q_{t}(Z_{t+1})}
+  \frac{1}{Q_{\theta_i}(Z_{i+1})}
+    \frac{\partial Q_{\theta_{i+1}}}{\partial \theta_{i+1}}(Z_{i+1})
+    \left( \log \frac{Q_{\theta_{i+1}}(Z_{i+1})}{P(Z_{i+1},X)} + 1 \right)
 \]
 
 The sign changes depending on whether \(Q_{t+1}(Z_{t+1})\) is greater or
-smaller than \(P(Z_{t+1},X)\) which is emminently reasonable. In this
-approach, we do not need to differentiable \(P\) with respect to \(Q\)
-but we can't port the proof of convergence of stochastic gradient
-as easily.
+smaller than \(P(Z_{t+1},X) e^{1}\). The \(e^{1}\) factor is a bit hard
+to explain and may suggest a problem with this approach.
+
+The shaky part is that the proposal distribution keeps changing over time.
 
 \subsection{Switching the KL divergence}
 
