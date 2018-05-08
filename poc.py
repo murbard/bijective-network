@@ -343,7 +343,7 @@ def print_mat(w, name):
 if __name__ == '__main__':
 
     model = Model()
-    net = Network(dim=5, n_layers=21)
+    net = Network(dim=3, n_layers=9)
     vb = VB(model, net)
 
 
@@ -401,7 +401,7 @@ if __name__ == '__main__':
                     score_ema = 0.9 * score_ema + 0.1 * score
 
             i += 1
-
+            print(i)
 
 
 
