@@ -178,7 +178,7 @@ input within a certain tolerance, the better the compression.
 Therefore, we would like for that function to blow up its input in the
 regions around the sample points, and consequently to contract it in other
 regions, since the image of the input domain is a hypercube of fixed volume.
-This is equivalent to saying the sum of the log jacobian, taken over the
+This is equivalent to saying the sum of the log Jacobian, taken over the
 antecedant of the sample, should be maximized.
 
 The Jacobian (divided by \(2^n\)) is a probability distribution
@@ -204,13 +204,13 @@ on the KL divergence between \(Q_{\theta}\) and \(P(Z | X)\)
   \int Q_{\theta}(Z) \log \frac{Q_{\theta}(Z)}{P(Z, X)} \mathrm{d}Z
 \]
 
-Typically, \(Q_{theta}\) is taken to have a simple parametric form that factors
+Typically, \(Q_{\theta}\) is taken to have a simple parametric form that factors
 into a product of independent distributions over several dimensions which
 renders the integration tractable and lends itself to  fast optimization
 algorithm.
 
-However,\(Q_{theta}\) is oftentimes a rather poor approximation of
-\(P(Z | X)\) because the parametric family is too poor to represent
+However,\(Q_{\theta}\) is oftentimes a rather poor approximation of
+\(P(Z | X)\) because the parametric family is too rigid to represent
 distributions close to the shape of the true posterior.
 
 \subsection{Variational inference, with bijective networks}
@@ -249,9 +249,9 @@ the stochastic gradient descent algorithm. Our algorithm, broadly therefore
 consists of:
 
 \begin{enumerate}
-\item Draw \(U_i\) uniformly, at randon, in \((-1,1)^n\)
-\item Let \(Z_i = f^{-1}(U_i)\) and \(Q(Z_i) = J_f(Z_i)\)
-\item Take a gradient step to minimize \(\log \frac{Q(Z_i)}{P(Z_i,X)}\)
+\item Draw \(U_i\) uniformly, at random, in \((-1,1)^n\)
+\item Let \(Z_i = f_{\theta}^{-1}(U_i)\) and \(Q_\theta(Z_i) = J_{f_\theta}(Z_i)\)
+\item Take a gradient step to minimize \(\log \frac{Q_\theta(Z_i)}{P(Z_i,X)}\)
 \end{enumerate}
 
 At a first glance, it might seem that \(P\) doesn't appear in the derivative
@@ -262,13 +262,7 @@ network weights (it's essentially the reparametrization trick).
 Crucially, this means that \(P(Z,X)\) must be differentiable with respect to
 \(Z\).
 
-The gradient is given as
-
-\[
-  (f^{-1})'(U_i)\cdot\left(\frac{Q'(Z_i)}{Q(Z_i)} - \frac{P'(Z_i, X)}{P(Z_i, X)}\right)
-\]
-
-A few important notes:
+Note that:
 
 \begin{itemize}
 \item We approximate \(\mathcal{L}\) by sampling through a \emph{fixed} distribution.
@@ -298,15 +292,14 @@ with respect to \(\theta_{i+1}\) yields:
 
 \[
   \frac{1}{Q_{\theta_i}(Z_{i+1})}
-    \frac{\partial Q_{\theta_{i+1}}}{\partial \theta_{i+1}}(Z_{i+1})
+    \frac{\partial Q_{\theta_{i+1}}(Z_{i+1})}{\partial \theta_{i+1}}
     \left( \log \frac{Q_{\theta_{i+1}}(Z_{i+1})}{P(Z_{i+1},X)} + 1 \right)
 \]
 
-The sign changes depending on whether \(Q_{t+1}(Z_{t+1})\) is greater or
-smaller than \(P(Z_{t+1},X) \exp(1)\). That \(e\) factor is hard
-to explain and may suggest a problem with this approach.
-
-The shaky part is that the proposal distribution keeps changing over time.
+The sign changes depending on whether \(Q_{\theta_{i+1}}(Z_{i+1})\) is greater
+or smaller than \(P(Z_{t+1},X) \exp(1)\). That \(e\) factor is hard to explain
+and may suggest a problem with this approach. It may be problematic that
+the proposal distribution keeps changing over time.
 
 \subsection{Switching the KL divergence}
 
