@@ -360,9 +360,9 @@ def print_mat(w, name="w"):
 if __name__ == '__main__':
 
     model = Model()
-    net = Network(dim=4, n_layers=9)
+    net = Network(dim=2, n_layers=3)
     vb = VB(model, net)
-    x = model.sample(23).eval(session=tf.Session())
+    x = model.sample(13).eval(session=tf.Session())
 
     # Set up matplotlib
     plt.ion()
@@ -372,10 +372,9 @@ if __name__ == '__main__':
     plt.draw()
     plt.pause(0.1)
 
-
     score_op = vb.stochastic_score(x, 20)
 
-    optimizer = tf.train.MomentumOptimizer(learning_rate=1e-5, momentum=0.1)
+    optimizer = tf.train.MomentumOptimizer(learning_rate=1e-6, momentum=0.1)
     grads_and_vars = optimizer.compute_gradients(score_op, gate_gradients=tf.train.Optimizer.GATE_GRAPH)
     # Remove nans from gradinets
     modified_gradients = [
@@ -384,10 +383,10 @@ if __name__ == '__main__':
     minimize = optimizer.apply_gradients(modified_gradients)
 
     print("Compiling posterior operation. This can take a *long* time...")
-    posterior = net.posterior(W=25)
+    posterior = net.posterior(W=2)
     print("done")
     # How often to display a new image of the posterior
-    print_every = 1
+    print_every = 100
 
     with tf.Session() as sess:
 
@@ -404,17 +403,15 @@ if __name__ == '__main__':
                     print_mat(w, 'w%d' % i)
                 raise Exception("womp womp")
 
-            if not score_ema:
-                score_ema = score
-            else:
-                if not np.isnan(score):
+            if -1e100 < score < 1e100:
+                if not score_ema:
+                    score_ema = score
+                else:
                     score_ema = 0.9 * score_ema + 0.1 * score
 
             i += 1
-            print(i)
-
             if (i + 1) % print_every == 0:
-                print(score, score_ema)
+                print(i, score, score_ema)
                 post = sess.run(posterior)
                 ax2.imshow(post)
                 plt.draw()
